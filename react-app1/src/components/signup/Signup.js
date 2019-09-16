@@ -1,30 +1,38 @@
 import React, { Component } from "react";
 import pic from "../../pic/Logo.png";
-import "./Login.css";
 import { Link } from "react-router-dom";
-import * as actionType from "../../store/actions/actionType";
+import * as actions from "../../store/actions/package";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-dom";
-import * as actions from "../../store/actions/package";
 import Spinner from "../spinner/Spinner";
 
-class Login extends Component {
-  componentDidMount() {
-    console.log(this.props.succeed);
-    if (this.props.succeed) {
-      console.log(this.props.succeed);
-      this.props.logout();
-    }
-  }
+class Signup extends Component {
   state = {
     loginForm: {
       username: {
         elementConfig: {
           type: "text",
-          placeholder: "Username or Email",
+          placeholder: "Username",
           className: "form-control"
         },
         validation: {
+          required: true,
+          minLength: 3,
+          maxLength: 10
+        },
+        value: "",
+        valid: false,
+        touched: false
+      },
+
+      email: {
+        elementConfig: {
+          type: "text",
+          placeholder: "Email",
+          className: "form-control"
+        },
+        validation: {
+          isEmail: true,
           required: true
         },
         value: "",
@@ -43,17 +51,22 @@ class Login extends Component {
         value: "",
         valid: false,
         touched: false
+      },
+      name: {
+        elementConfig: {
+          type: "text",
+          placeholder: "Name",
+          className: "form-control"
+        },
+        validation: {
+          required: true
+        },
+        value: "",
+        valid: false,
+        touched: false
       }
     },
     formIsValid: false
-  };
-
-  loginHandle = event => {
-    event.preventDefault();
-    this.props.login(
-      this.state.loginForm.username.value,
-      this.state.loginForm.password.value
-    );
   };
 
   checkValidity(value, rules) {
@@ -61,6 +74,17 @@ class Login extends Component {
 
     if (rules.required) {
       isValid = value.trim() !== "" && isValid;
+    }
+
+    if (rules.isEmail) {
+      const pattern = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
+      isValid = pattern.test(value) && isValid;
+    }
+    if (rules.minLength) {
+      isValid = value.length >= rules.minLength && isValid;
+    }
+    if (rules.maxLength) {
+      isValid = value.length <= rules.maxLength && isValid;
     }
 
     return isValid;
@@ -82,7 +106,6 @@ class Login extends Component {
     );
 
     if (updatedFormElement.valid === false) {
-      console.log(updatedFormElement);
       updatedFormElement.elementConfig.className = updatedFormElement.elementConfig.className.concat(
         " Invalid"
       );
@@ -93,6 +116,17 @@ class Login extends Component {
     updatedFormElement.touched = true;
     updatedLoginrForm[index] = updatedFormElement;
 
+    if (
+      updatedFormElement.valid === false &&
+      updatedFormElement.touched == true
+    ) {
+      updatedFormElement.elementConfig.className = updatedFormElement.elementConfig.className.concat(
+        " Invalid"
+      );
+    } else {
+      updatedFormElement.elementConfig.className = "form-control";
+    }
+
     let formIsValid = true;
 
     for (let index in updatedLoginrForm) {
@@ -100,6 +134,15 @@ class Login extends Component {
     }
 
     this.setState({ loginForm: updatedLoginrForm, formIsValid: formIsValid });
+  };
+
+  signupHandle = () => {
+    this.props.signup(
+      this.state.loginForm.username.value,
+      this.state.loginForm.email.value,
+      this.state.loginForm.name.value,
+      this.state.loginForm.password.value
+    );
   };
 
   render() {
@@ -110,32 +153,21 @@ class Login extends Component {
 
     let error;
     if (this.props.error) {
-      error = (
-        <div className="alert alert-warning mt-4">
-          No such username or password
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-      );
+      error = <div className="alert alert-warning mt-4">Email is used</div>;
     }
 
     let redirect;
-
-    if (this.props.succeed) {
-      redirect = <Redirect to="/search" />;
+    if (this.props.success) {
+      redirect = <Redirect to="/" />;
     }
 
-    let loginForm = (
-      <form onSubmit={this.loginHandle}>
+    let signupForm = (
+      <form>
         <div className="row">
           <div className="col-md-12 form-group">
-            {error},{redirect}
+            {error}
+            {redirect}
+            <h4>username:</h4>
             <input
               type={this.state.loginForm.username.elementConfig.type}
               className={this.state.loginForm.username.elementConfig.className}
@@ -148,6 +180,29 @@ class Login extends Component {
         </div>
         <div className="row">
           <div className="col-md-12 form-group">
+            <h4>email:</h4>
+            <input
+              type={this.state.loginForm.email.elementConfig.type}
+              placeholder={this.state.loginForm.email.elementConfig.placeholder}
+              className={this.state.loginForm.email.elementConfig.className}
+              onChange={event => this.handleChange(event, "email")}
+            />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-md-12 form-group">
+            <h4>name:</h4>
+            <input
+              type={this.state.loginForm.name.elementConfig.type}
+              placeholder={this.state.loginForm.name.elementConfig.placeholder}
+              className={this.state.loginForm.name.elementConfig.className}
+              onChange={event => this.handleChange(event, "name")}
+            />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-md-12 form-group">
+            <h4>password:</h4>
             <input
               type={this.state.loginForm.password.elementConfig.type}
               placeholder={
@@ -159,13 +214,21 @@ class Login extends Component {
           </div>
         </div>
         <div className="row">
+          <div className="mr-auto form-group ml-3">
+            <Link to="/login">
+              <button type="button" className="btn btn-primary ">
+                Log in
+              </button>
+            </Link>
+          </div>
           <div className="ml-auto form-group mr-3">
             <button
+              type="button"
               disabled={!this.state.formIsValid}
-              type="submit"
               className="btn btn-primary "
+              onClick={this.signupHandle}
             >
-              Log in
+              Sign up
             </button>
           </div>
         </div>
@@ -180,7 +243,7 @@ class Login extends Component {
             <h4 style={fontstyle}>Building Product Selection Platform</h4>
           </div>
         </div>
-        {this.props.loading ? <Spinner /> : loginForm}
+        {this.props.loading ? <Spinner /> : signupForm}
       </div>
     );
   }
@@ -188,20 +251,20 @@ class Login extends Component {
 
 const mapStateToProps = state => {
   return {
-    succeed: state.login.succeed,
-    error: state.login.error,
-    loading: state.login.loading
+    success: state.signup.success,
+    error: state.signup.error,
+    loading: state.signup.loading
   };
 };
 
 const mapDispatchToProps = dispatch => {
   return {
-    login: (username, password) => dispatch(actions.login(username, password)),
-    logout: () => dispatch(actions.logout())
+    signup: (username, email, name, password) =>
+      dispatch(actions.signup(username, email, name, password))
   };
 };
 
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(Login);
+)(Signup);
